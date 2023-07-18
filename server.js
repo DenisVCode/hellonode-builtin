@@ -1,16 +1,28 @@
-const express = require("express");
+import express from "express";
+import { ENSInstance } from "./ens_provider.js";
+import { PROJECT_API_KEY } from "./defaults.js";
+
 const app = express();
 const port = process.env.PORT || 3000;
 
-app.get(["/", "/:name"], (req, res) => {
-  greeting = "<h1>Hello From Node on Fly!</h1>";
-  name = req.params["name"];
+app.get(["/:name"], async (req, res) => {
+  if (req.headers.authorization !== PROJECT_API_KEY) {
+    res.status(401).send("Unauthorized");
+    return;
+  }
+  const name = req.params["name"];
+  console.log(name);
   if (name) {
-    res.send(greeting + "</br>and hello to " + name);
+    try {
+      const profile = await ENSInstance.getProfile(name);
+      res.send(profile);
+    } catch (error) {
+      res.status(500).send(String(error));
+    }
   } else {
-    res.send(greeting);
+    // Missing required parameter
+    res.status(400).send("Missing required parameter");
   }
 });
 
-app.listen(port, () => console.log(`HelloNode app listening on port ${port}!`))
-
+app.listen(port, () => console.log(`App listening on port ${port}!`));
